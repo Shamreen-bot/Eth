@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroX | Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #0f172a;
+      color: white;
+      padding: 50px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      background: #1e293b;
+      border-radius: 12px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #22c55e;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      margin: 10px;
+    }
+    #tokenBalance {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to NeuroX Dashboard</h1>
+    <p>Connect your wallet to see your $NRX balance.</p>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <button onclick="addToken()">➕ Add $NRX Token</button>
+    <div id="walletAddress"></div>
+    <div id="tokenBalance"></div>
+  </div>
+
+  <script>
+    const tokenAddress = "YOUR_NEUROX_TOKEN_ADDRESS_HERE";
+    const tokenSymbol = "NRX";
+    const tokenDecimals = 18;
+    const tokenImage = "https://yourdomain.com/token-logo.png";
+
+    const tokenABI = [
+      {
+        "constant": true,
+        "inputs": [{ "name": "_owner", "type": "address" }],
+        "name": "balanceOf",
+        "outputs": [{ "name": "balance", "type": "uint256" }],
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{ "name": "", "type": "uint8" }],
+        "type": "function"
+      }
+    ];
+
+    let provider;
+    let signer;
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const walletAddress = accounts[0];
+          document.getElementById("walletAddress").innerText = "Wallet: " + walletAddress;
+
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+
+          await switchToBSC();
+          getTokenBalance(walletAddress);
+        } catch (err) {
+          alert("Wallet connection failed: " + err.message);
+        }
+      } else {
+        alert("MetaMask not detected. Please install MetaMask.");
+      }
+    }
+
+    async function switchToBSC() {
+      const bscParams = {
+        chainId: '0x38',
+        chainName: 'Binance Smart Chain',
+        nativeCurrency: {
+          name: 'BNB',
+          symbol: 'BNB',
+          decimals: 18
+        },
+        rpcUrls: ['https://bsc-dataseed.binance.org/'],
+        blockExplorerUrls: ['https://bscscan.com']
+      };
+
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [bscParams]
+        });
+      } catch (err) {
+        console.log("Failed to switch to BSC: ", err);
+      }
+    }
+
+    async function getTokenBalance(address) {
+      const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
+      const rawBalance = await contract.balanceOf(address);
+      const decimals = await contract.decimals();
+      const readableBalance = rawBalance / Math.pow(10, decimals);
+      document.getElementById("tokenBalance").innerText = `$NRX Balance: ${readableBalance}`;
+    }
+
+    async function addToken() {
+      try {
+        const wasAdded = await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: {
+            type: 'ERC20',
+            options: {
+              address: tokenAddress,
+              symbol: tokenSymbol,
+              decimals: tokenDecimals,
+              image: tokenImage,
+            },
+          },
+        });
+
+        if (wasAdded) {
+          console.log("Token added!");
+        } else {
+          console.log("Token add rejected.");
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</body>
+</html>
