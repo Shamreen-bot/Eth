@@ -78,7 +78,8 @@ index.html
           const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
           const walletAddress = accounts[0];
           document.getElementById("walletAddress").innerText = "Wallet: " + walletAddress;
-
+          document.getElementById("walletAddress").innerText = "Wallet: " + walletAddress;
+alert("Shamreen welcomes you to the new crypto world!");
           provider = new ethers.providers.Web3Provider(window.ethereum);
           signer = provider.getSigner();
 
